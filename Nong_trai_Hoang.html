@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Nông Trại Hoàng</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#dff2c6;color:#263b25;font-family:system-ui,Arial;text-align:center}
+header{background:#4d8b42;color:white;padding:12px;font-weight:800;font-size:22px}
+#stats{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;padding:10px;font-weight:700}
+#farm{display:grid;grid-template-columns:repeat(5,minmax(48px,1fr));gap:6px;width:min(94vw,430px);margin:8px auto 14px}
+.tile{aspect-ratio:1;border:2px solid #987447;border-radius:10px;background:#83bd58;font-size:30px;display:grid;place-items:center;box-shadow:inset 0 -5px #0001;touch-action:manipulation}
+.tile.soil{background:#986b43}.tile.ready{background:#b7d96c}
+#tools{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;padding:8px}
+button{border:0;border-radius:12px;padding:11px 13px;background:#fff3ce;color:#49351f;font-weight:800;font-size:15px;box-shadow:0 3px #c5a86c;touch-action:manipulation}
+button.active{background:#f5c85e;outline:3px solid #8b6427}
+#message{min-height:28px;font-weight:700;padding:5px}
+.panel{background:#fff9e9;border:2px solid #d7c18b;border-radius:14px;width:min(94vw,430px);margin:8px auto;padding:10px}
+small{display:block;color:#52654b;margin:5px}
+</style>
+</head>
+<body>
+<header>🌻 NÔNG TRẠI HOÀNG 🌻</header>
+<div id="stats"><span>💰 Tiền: <b id="money">100</b></span><span>📅 Ngày: <b id="day">1</b></span><span>🥕 Thu hoạch: <b id="harvest">0</b></span></div>
+<div id="farm"></div>
+<div id="tools">
+<button data-tool="hoe" class="active">⛏️ Xới đất</button>
+<button data-tool="seed">🌱 Gieo hạt (10đ)</button>
+<button data-tool="water">💧 Tưới nước</button>
+<button data-tool="harvest">🧺 Thu hoạch</button>
+</div>
+<div class="panel">
+<div style="font-weight:800;margin-bottom:8px">🏪 Cửa hàng nông trại</div>
+<button id="sell">Bán nông sản (+20đ/quả)</button>
+<button id="next">🌙 Ngủ – sang ngày mới</button>
+<button id="chicken">🐔 Mua gà (50đ)</button>
+<div id="animals">🐔 Gà: 0</div>
+<small>Chạm ô đất để thao tác. Cây cần được tưới mỗi ngày; sau 2 lần tưới sẽ chín.</small>
+</div>
+<div id="message">Chào mừng đến nông trại! Hãy xới một ô đất trước nhé.</div>
+<script>
+const farm=document.getElementById('farm'), moneyEl=document.getElementById('money'),dayEl=document.getElementById('day'),harvestEl=document.getElementById('harvest'),msg=document.getElementById('message');
+let money=100,day=1,harvest=0,tool='hoe',chickens=0,crops=Array.from({length:20},()=>({soil:false,stage:0,watered:false}));
+const icons=['','🌱','🌿','🥕'];
+function say(t){msg.textContent=t}
+function update(){
+ moneyEl.textContent=money;dayEl.textContent=day;harvestEl.textContent=harvest;
+ document.getElementById('animals').textContent='🐔 Gà: '+chickens;
+ farm.innerHTML='';
+ crops.forEach((c,i)=>{let b=document.createElement('button');b.className='tile'+(c.soil?' soil':'')+(c.stage>=3?' ready':'');b.textContent=c.stage>=3?'🥕':c.stage===2?'🌿':c.stage===1?'🌱':c.soil?'🟫':'🌼';b.setAttribute('aria-label','Ô đất '+(i+1));b.onclick=()=>act(i);farm.appendChild(b)});
+}
+function act(i){let c=crops[i];
+ if(tool==='hoe'){if(c.soil){say('Ô này đã được xới rồi!');return}c.soil=true;say('Đã xới đất. Chọn Gieo hạt nhé.')}
+ if(tool==='seed'){if(!c.soil||c.stage){say('Hãy chọn ô đất trống đã xới.');return}if(money<10){say('Bạn không đủ tiền mua hạt giống.');return}money-=10;c.stage=1;c.watered=false;say('Đã gieo hạt cà rốt!')}
+ if(tool==='water'){if(c.stage===0||c.stage>=3){say('Ô này chưa cần tưới.');return}c.watered=true;say('Đã tưới nước. Cây sẽ lớn khi sang ngày mới.')}
+ if(tool==='harvest'){if(c.stage<3){say('Cà rốt chưa chín. Hãy tưới và đợi thêm nhé!');return}c.stage=0;c.soil=true;c.watered=false;harvest++;say('Thu hoạch được 1 củ cà rốt!')}
+ update();
+}
+document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{tool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('active',x===b));say('Đã chọn: '+b.textContent)});
+document.getElementById('sell').onclick=()=>{if(!harvest){say('Bạn chưa có nông sản để bán.');return}money+=harvest*20;say('Đã bán '+harvest+' củ cà rốt, nhận '+harvest*20+' đồng!');harvest=0;update()};
+document.getElementById('next').onclick=()=>{day++;let grown=0;crops.forEach(c=>{if(c.stage>0&&c.stage<3){if(c.watered){c.stage++;grown++}c.watered=false}});say('Ngày mới! Có '+grown+' cây lớn thêm. Nhớ tưới cây nhé.');update()};
+document.getElementById('chicken').onclick=()=>{if(money<50){say('Bạn cần 50 đồng để mua gà.');return}money-=50;chickens++;say('Bạn đã mua một chú gà! 🐔');update()};
+update();
+</script>
+</body></html>
